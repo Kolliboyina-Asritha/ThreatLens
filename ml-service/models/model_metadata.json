@@ -1,0 +1,132 @@
+{
+  "model_name": "ThreatLens Random Forest URL Classifier",
+  "model_version": "1.0.0",
+  "schema_version": "threatlens_features_v1.0",
+  "algorithm": "RandomForestClassifier(n_estimators=100, max_depth=15, class_weight='balanced', random_state=42)",
+  "dataset_name": "ThreatLens Curated Benchmark Dataset (Tranco Top Sites + PhishTank + URLhaus)",
+  "dataset_source": "Tranco Top Sites (Open License), PhishTank Verified Feed (CC-BY-NC), URLhaus (CC0)",
+  "dataset_license": "Combined Open Research & Educational Dataset",
+  "sample_count": 364,
+  "benign_count": 200,
+  "malicious_count": 164,
+  "train_count": 291,
+  "test_count": 73,
+  "feature_count": 18,
+  "features": [
+    "url_length",
+    "hostname_length",
+    "path_length",
+    "query_length",
+    "dot_count",
+    "subdomain_count",
+    "path_segment_count",
+    "query_params_count",
+    "special_char_count",
+    "digits_count",
+    "hyphen_count",
+    "underscore_count",
+    "at_symbol_count",
+    "percent_count",
+    "uses_https",
+    "is_ip_address",
+    "suspicious_keyword_count",
+    "suspicious_hostname_pattern"
+  ],
+  "metrics": {
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1_score": 1.0,
+    "roc_auc": 1.0,
+    "confusion_matrix": {
+      "true_negatives": 40,
+      "false_positives": 0,
+      "false_negatives": 0,
+      "true_positives": 33,
+      "matrix": [
+        [
+          40,
+          0
+        ],
+        [
+          0,
+          33
+        ]
+      ]
+    },
+    "feature_importances": [
+      {
+        "feature": "suspicious_hostname_pattern",
+        "importance": 0.2877
+      },
+      {
+        "feature": "hyphen_count",
+        "importance": 0.1576
+      },
+      {
+        "feature": "hostname_length",
+        "importance": 0.1391
+      },
+      {
+        "feature": "uses_https",
+        "importance": 0.128
+      },
+      {
+        "feature": "subdomain_count",
+        "importance": 0.0585
+      },
+      {
+        "feature": "suspicious_keyword_count",
+        "importance": 0.0549
+      },
+      {
+        "feature": "url_length",
+        "importance": 0.052
+      },
+      {
+        "feature": "path_length",
+        "importance": 0.0252
+      },
+      {
+        "feature": "special_char_count",
+        "importance": 0.0228
+      },
+      {
+        "feature": "digits_count",
+        "importance": 0.0208
+      },
+      {
+        "feature": "path_segment_count",
+        "importance": 0.0198
+      },
+      {
+        "feature": "dot_count",
+        "importance": 0.0177
+      },
+      {
+        "feature": "percent_count",
+        "importance": 0.0079
+      },
+      {
+        "feature": "is_ip_address",
+        "importance": 0.0043
+      },
+      {
+        "feature": "underscore_count",
+        "importance": 0.002
+      },
+      {
+        "feature": "at_symbol_count",
+        "importance": 0.0015
+      },
+      {
+        "feature": "query_params_count",
+        "importance": 0.0003
+      },
+      {
+        "feature": "query_length",
+        "importance": 0.0
+      }
+    ]
+  }
+}

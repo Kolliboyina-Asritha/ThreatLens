@@ -1,0 +1,122 @@
+/* ThreatLens AI Extension Shared Stylesheet */
+:root {
+  --bg-dark: #090d16;
+  --card-bg: #0f172a;
+  --card-border: #1e293b;
+  --cyan-primary: #06b6d4;
+  --cyan-glow: rgba(6, 182, 212, 0.15);
+  --emerald-safe: #10b981;
+  --amber-warn: #f59e0b;
+  --red-block: #ef4444;
+  --purple-override: #a855f7;
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--bg-dark);
+  color: var(--text-main);
+  line-height: 1.5;
+}
+
+.mono {
+  font-family: "Courier New", Courier, monospace, ui-monospace;
+}
+
+.card {
+  background-color: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 18px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.btn-primary {
+  background-color: var(--cyan-primary);
+  color: #020617;
+}
+.btn-primary:hover {
+  background-color: #22d3ee;
+}
+
+.btn-danger {
+  background-color: var(--red-block);
+  color: #ffffff;
+}
+.btn-danger:hover {
+  background-color: #dc2626;
+}
+
+.btn-warn {
+  background-color: var(--amber-warn);
+  color: #020617;
+}
+.btn-warn:hover {
+  background-color: #d97706;
+}
+
+.btn-secondary {
+  background-color: #1e293b;
+  color: var(--text-main);
+  border: 1px solid #334155;
+}
+.btn-secondary:hover {
+  background-color: #334155;
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.badge-safe {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--emerald-safe);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.badge-warn {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--amber-warn);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.badge-block {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--red-block);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.pulse {
+  animation: pulse-animation 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse-animation {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}

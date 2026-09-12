@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ThreatLens AI — Browser Protection Settings</title>
+  <link rel="stylesheet" href="../shared/style.css">
+  <style>
+    .options-container {
+      max-width: 620px;
+      margin: 32px auto;
+      padding: 28px;
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+    }
+    .card-section {
+      background: #020617;
+      border: 1px solid #1e293b;
+      border-radius: 12px;
+      padding: 18px;
+      margin-bottom: 20px;
+    }
+    .section-title {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #38bdf8;
+      margin-bottom: 12px;
+    }
+    .account-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .form-group {
+      margin-bottom: 14px;
+    }
+    label {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      color: #94a3b8;
+      margin-bottom: 6px;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 10px 12px;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      color: #f8fafc;
+      font-size: 12px;
+      font-family: monospace;
+    }
+    input:focus {
+      outline: none;
+      border-color: #06b6d4;
+    }
+    .help-text {
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 4px;
+    }
+    .status-box {
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      margin-bottom: 16px;
+      display: none;
+    }
+    .user-info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .user-email {
+      font-size: 14px;
+      font-weight: 700;
+      color: #f8fafc;
+    }
+    .session-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 9999px;
+      font-family: monospace;
+      width: fit-content;
+    }
+    .badge-active {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid #10b981;
+      color: #34d399;
+    }
+    .badge-disconnected {
+      background: rgba(148, 163, 184, 0.15);
+      border: 1px solid #64748b;
+      color: #94a3b8;
+    }
+    .badge-expired {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid #ef4444;
+      color: #f87171;
+    }
+  </style>
+</head>
+<body>
+  <div class="options-container">
+    <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #1e293b; padding-bottom: 16px; margin-bottom: 20px;">
+      <div>
+        <h1 style="font-size: 18px; font-weight: 800;" class="mono">THREATLENS AI — BROWSER PROTECTION</h1>
+        <p class="help-text">Explainable Real-Time Protection & User-Controlled Security</p>
+      </div>
+      <span class="badge badge-safe mono">v3.0.0</span>
+    </div>
+
+    <div id="statusAlert" class="status-box mono"></div>
+
+    <!-- 1. Account & Session Management Card -->
+    <div class="card-section">
+      <div class="section-title mono">THREATLENS ACCOUNT & SESSION</div>
+      <div class="account-row">
+        <div class="user-info">
+          <div id="sessionBadge" class="session-badge badge-disconnected mono">
+            <span id="sessionDot" style="width: 6px; height: 6px; border-radius: 50%; background: #94a3b8;"></span>
+            <span id="sessionText">Not Authenticated</span>
+          </div>
+          <div id="userEmailText" class="user-email mono" style="margin-top: 4px;">No account linked</div>
+          <div id="sessionDetail" class="help-text">Sign in to sync your personalized policies and allowlists.</div>
+        </div>
+
+        <div>
+          <button type="button" id="btnSignIn" class="btn btn-primary">
+            Sign in with ThreatLens
+          </button>
+          <button type="button" id="btnSignOut" class="btn btn-secondary" style="display: none;">
+            Sign Out
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Endpoint Configuration Card -->
+    <div class="card-section">
+      <div class="section-title mono">ENDPOINT CONFIGURATION</div>
+      <form id="configForm">
+        <div class="form-group">
+          <label for="backendUrl" class="mono">THREATLENS BACKEND API URL</label>
+          <input type="text" id="backendUrl" placeholder="http://localhost:5000" value="http://localhost:5000" required>
+          <div class="help-text">API endpoint for threat evaluation and user enforcement.</div>
+        </div>
+
+        <div class="form-group">
+          <label for="webDashboardUrl" class="mono">THREATLENS WEB DASHBOARD URL</label>
+          <input type="text" id="webDashboardUrl" placeholder="http://localhost:5173" value="http://localhost:5173" required>
+          <div class="help-text">Frontend web application URL for authentication and reporting.</div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 18px; padding-top: 14px; border-top: 1px solid #1e293b;">
+          <button type="button" id="btnTestConn" class="btn btn-secondary">
+            Test Connection
+          </button>
+          <button type="submit" class="btn btn-primary">
+            Save Configuration
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>

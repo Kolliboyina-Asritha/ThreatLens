@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ThreatLens Protection Popup</title>
+  <link rel="stylesheet" href="../shared/style.css">
+  <style>
+    body {
+      width: 340px;
+      padding: 16px;
+      background: #090d16;
+      font-size: 13px;
+      color: #f8fafc;
+    }
+    .popup-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #1e293b;
+      padding-bottom: 12px;
+      margin-bottom: 12px;
+    }
+    .brand {
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      color: #f8fafc;
+      font-size: 14px;
+    }
+    .brand span {
+      color: #06b6d4;
+    }
+    .user-badge-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #020617;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      padding: 8px 10px;
+      margin-bottom: 12px;
+      font-size: 11px;
+    }
+    .tab-info-box {
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 6px;
+    }
+    .status-active {
+      background: #10b981;
+      box-shadow: 0 0 6px #10b981;
+    }
+    .status-offline {
+      background: #ef4444;
+    }
+    .status-idle {
+      background: #94a3b8;
+    }
+    .auth-cta-box {
+      background: rgba(6, 182, 212, 0.1);
+      border: 1px solid rgba(6, 182, 212, 0.3);
+      border-radius: 8px;
+      padding: 12px;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="popup-header">
+    <div class="brand mono">
+      THREAT<span>LENS</span> AI
+    </div>
+    <span id="badgeMode" class="badge badge-safe mono">BALANCED</span>
+  </div>
+
+  <!-- User Account Bar -->
+  <div class="user-badge-bar mono">
+    <div style="display: flex; align-items: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 220px;">
+      <span id="connDot" class="status-dot status-idle"></span>
+      <span id="userAccountText" style="color: #94a3b8; overflow: hidden; text-overflow: ellipsis;">Not Signed In</span>
+    </div>
+    <span id="authActionLink" style="color: #38bdf8; cursor: pointer; text-decoration: underline; shrink: 0;">Sign In</span>
+  </div>
+
+  <!-- Auth Call to Action when disconnected -->
+  <div id="authCtaBox" class="auth-cta-box" style="display: none;">
+    <div style="font-size: 12px; font-weight: 700; color: #38bdf8; margin-bottom: 4px;" class="mono">
+      Sign in with ThreatLens
+    </div>
+    <div style="font-size: 11px; color: #94a3b8; margin-bottom: 10px;">
+      Connect your account to enable personalized protection and automatic token renewal.
+    </div>
+    <button id="btnPopupSignIn" class="btn btn-primary" style="width: 100%; font-size: 12px; padding: 8px 12px;">
+      Sign in with ThreatLens
+    </button>
+  </div>
+
+  <!-- Tab Inspection Box -->
+  <div class="tab-info-box">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+      <span class="mono" style="font-size: 10px; color: #64748b; text-transform: uppercase;">Current Tab URL</span>
+      <span id="currentStatus" style="font-size: 11px; font-weight: 600;" class="mono">Ready</span>
+    </div>
+    <div id="currentTabUrl" class="mono" style="font-size: 11px; color: #38bdf8; word-break: break-all; max-height: 38px; overflow: hidden;">
+      Loading active tab...
+    </div>
+  </div>
+
+  <!-- Scan Controls -->
+  <div style="margin-bottom: 12px;">
+    <div id="riskScoreContainer" style="display: none; margin-bottom: 10px;" class="card">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 11px; color: #94a3b8;" class="mono">THREAT RISK</span>
+        <span id="riskScoreValue" style="font-size: 14px; font-weight: bold;" class="mono">--/100</span>
+      </div>
+    </div>
+
+    <button id="btnScanCurrentTab" class="btn btn-primary" style="width: 100%;">
+      Scan Current Webpage
+    </button>
+  </div>
+
+  <!-- Footer Navigation -->
+  <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 10px; border-top: 1px solid #1e293b;">
+    <span id="protectionStatusText" class="mono" style="font-size: 11px; color: #64748b;">Protection Active</span>
+
+    <div style="display: flex; gap: 10px;">
+      <a id="linkOptions" href="#" style="font-size: 11px; color: #06b6d4; text-decoration: none;">Options</a>
+      <a id="linkDashboard" href="#" style="font-size: 11px; color: #06b6d4; text-decoration: none;">Dashboard</a>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

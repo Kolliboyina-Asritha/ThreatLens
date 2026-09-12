@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ThreatLens Security Warning — Suspicious URL Detected</title>
+  <link rel="stylesheet" href="../shared/style.css">
+  <style>
+    .warning-container {
+      max-width: 720px;
+      margin: 40px auto;
+      padding: 32px;
+      background: #0f172a;
+      border: 1px solid #f59e0b;
+      border-radius: 16px;
+      box-shadow: 0 0 30px rgba(245, 158, 11, 0.15);
+    }
+    .warning-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      border-bottom: 1px solid #1e293b;
+      padding-bottom: 20px;
+      margin-bottom: 24px;
+    }
+    .icon-warn {
+      font-size: 36px;
+      color: #f59e0b;
+    }
+    .url-box {
+      background: #020617;
+      border: 1px solid #334155;
+      padding: 12px 16px;
+      border-radius: 8px;
+      word-break: break-all;
+      color: #38bdf8;
+      font-size: 13px;
+      margin-bottom: 20px;
+    }
+    .explanation-panel {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 24px;
+    }
+    .exp-title {
+      font-weight: bold;
+      color: #f8fafc;
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+    .exp-text {
+      font-size: 13px;
+      color: #cbd5e1;
+      line-height: 1.6;
+    }
+    .actions-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border-top: 1px solid #1e293b;
+      padding-top: 20px;
+    }
+    .subtext {
+      font-size: 12px;
+      color: #64748b;
+    }
+  </style>
+</head>
+<body>
+  <div class="warning-container">
+    <div class="warning-header">
+      <div class="icon-warn">⚠️</div>
+      <div>
+        <span class="badge badge-warn">Suspicious Threat Detected</span>
+        <h1 style="font-size: 20px; margin-top: 4px; font-weight: 700;">Security Warning: Suspicious Link</h1>
+      </div>
+    </div>
+
+    <div class="subtext mono" style="margin-bottom: 8px;">TARGET URL:</div>
+    <div id="targetUrl" class="url-box mono">Loading target URL...</div>
+
+    <div style="display: flex; gap: 16px; margin-bottom: 20px;">
+      <div class="card" style="flex: 1; padding: 12px;">
+        <div class="subtext mono">RISK SCORE</div>
+        <div id="riskScore" style="font-size: 24px; font-weight: bold; color: #f59e0b;" class="mono">--/100</div>
+      </div>
+      <div class="card" style="flex: 1; padding: 12px;">
+        <div class="subtext mono">EVALUATION</div>
+        <div id="riskLevel" style="font-size: 16px; font-weight: bold; color: #f59e0b; margin-top: 6px;" class="mono">SUSPICIOUS</div>
+      </div>
+    </div>
+
+    <!-- Dual-Tier Explanations Area -->
+    <div id="explanationContainer" class="explanation-panel">
+      <div class="exp-title">Why Was This Link Flagged?</div>
+      <div id="explanationSimple" class="exp-text" style="margin-bottom: 12px;">
+        This web address exhibits structural or lexical patterns commonly associated with deceptive or phishing websites.
+      </div>
+      <div class="subtext mono" style="color: #94a3b8; font-size: 11px;">TECHNICAL EVIDENCE:</div>
+      <div id="explanationTechnical" class="mono" style="font-size: 12px; color: #38bdf8; margin-top: 4px;">
+        Multi-engine risk fusion evaluated indicators across Heuristics and Machine Learning.
+      </div>
+    </div>
+
+    <div class="actions-bar">
+      <button id="btnGoBack" class="btn btn-primary">
+        ← Return to Safety
+      </button>
+
+      <div style="display: flex; gap: 8px;">
+        <button id="btnAllowlist" class="btn btn-secondary">
+          Trust & Allow Site
+        </button>
+        <button id="btnOverride" class="btn btn-warn">
+          Proceed Anyway (Override)
+        </button>
+      </div>
+    </div>
+
+    <div style="margin-top: 16px; text-align: center;">
+      <span class="subtext">Protected by ThreatLens AI · You have complete control over all decisions.</span>
+    </div>
+  </div>
+
+  <script type="module" src="warning.js"></script>
+</body>
+</html>
