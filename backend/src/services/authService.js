@@ -53,10 +53,11 @@ export const verifyRefreshToken = (token) => {
  */
 export const getRefreshTokenCookieOptions = () => {
   const isProd = env.NODE_ENV === 'production';
+
   return {
     httpOnly: true,
     secure: isProd,
-    sameSite: isProd ? 'strict' : 'lax',
+    sameSite: isProd ? 'none' : 'lax',
     maxAge: AUTH_CONSTANTS.REFRESH_COOKIE_MAX_AGE,
     path: '/'
   };
