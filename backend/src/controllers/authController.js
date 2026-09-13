@@ -168,7 +168,7 @@ export const logout = async (req, res, next) => {
     res.clearCookie(AUTH_CONSTANTS.REFRESH_COOKIE_NAME, {
       httpOnly: true,
       secure: isProd,
-      sameSite: isProd ? 'strict' : 'lax',
+      sameSite: isProd ? 'none' : 'lax',
       path: '/'
     });
 
