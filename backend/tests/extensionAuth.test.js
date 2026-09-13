@@ -413,4 +413,187 @@ describe('Phase 3 - Chrome Extension Dedicated Authentication & Session Manageme
     const res6 = await handleMessage({ type: 'UNKNOWN_OP' });
     assert.strictEqual(res6.ok, false);
   });
+
+  describe('CORS Security, Origin Allowlist & Render Trust Proxy Tests', () => {
+    it('1. Netlify origin accepted with exact match and credentials', async () => {
+      const res = await request(app)
+        .options('/api/auth/extension/exchange')
+        .set('Origin', 'https://threatlens123.netlify.app')
+        .set('Access-Control-Request-Method', 'POST');
+
+      assert.strictEqual(res.headers['access-control-allow-origin'], 'https://threatlens123.netlify.app');
+      assert.strictEqual(res.headers['access-control-allow-credentials'], 'true');
+    });
+
+    it('2. Localhost origin accepted for development', async () => {
+      const res = await request(app)
+        .options('/api/auth/extension/exchange')
+        .set('Origin', 'http://localhost:5173')
+        .set('Access-Control-Request-Method', 'POST');
+
+      assert.strictEqual(res.headers['access-control-allow-origin'], 'http://localhost:5173');
+      assert.strictEqual(res.headers['access-control-allow-credentials'], 'true');
+    });
+
+    it('3. Chrome extension origin accepted for extension authentication', async () => {
+      const res = await request(app)
+        .options('/api/auth/extension/exchange')
+        .set('Origin', 'chrome-extension://plhnljjabifklonfngdjplhhhdikcnej')
+        .set('Access-Control-Request-Method', 'POST');
+
+      assert.strictEqual(res.headers['access-control-allow-origin'], 'chrome-extension://plhnljjabifklonfngdjplhhhdikcnej');
+      assert.strictEqual(res.headers['access-control-allow-credentials'], 'true');
+    });
+
+    it('4. Unknown origin, arbitrary Netlify subdomains, and arbitrary chrome-extension IDs rejected with 403', async () => {
+      // Rejects unknown web origin
+      const resWeb = await request(app)
+        .post('/api/auth/extension/exchange')
+        .set('Origin', 'https://unauthorized-attacker.example.org')
+        .send({ authCode: 'invalid', extensionId: 'test', state: 'test' });
+
+      assert.strictEqual(resWeb.status, 403);
+      assert.notStrictEqual(resWeb.headers['access-control-allow-origin'], 'https://unauthorized-attacker.example.org');
+      assert.notStrictEqual(resWeb.headers['access-control-allow-origin'], '*');
+
+      // Rejects arbitrary Netlify subdomain
+      const resNetlify = await request(app)
+        .post('/api/auth/extension/exchange')
+        .set('Origin', 'https://arbitrary-attacker.netlify.app')
+        .send({ authCode: 'invalid', extensionId: 'test', state: 'test' });
+
+      assert.strictEqual(resNetlify.status, 403);
+      assert.notStrictEqual(resNetlify.headers['access-control-allow-origin'], 'https://arbitrary-attacker.netlify.app');
+      assert.notStrictEqual(resNetlify.headers['access-control-allow-origin'], '*');
+
+      // Rejects arbitrary chrome-extension ID
+      const resExt = await request(app)
+        .post('/api/auth/extension/exchange')
+        .set('Origin', 'chrome-extension://unauthorized_fake_extension_id_99999')
+        .send({ authCode: 'invalid', extensionId: 'test', state: 'test' });
+
+      assert.strictEqual(resExt.status, 403);
+      assert.notStrictEqual(resExt.headers['access-control-allow-origin'], 'chrome-extension://unauthorized_fake_extension_id_99999');
+      assert.notStrictEqual(resExt.headers['access-control-allow-origin'], '*');
+    });
+
+    it('5. Extension authorize works with authorized session', async () => {
+      const state = 'test-state-auth-5';
+      const res = await request(app)
+        .post('/api/auth/extension/authorize')
+        .set('Origin', 'https://threatlens123.netlify.app')
+        .set('Authorization', `Bearer ${userAToken}`)
+        .send({ extensionId: 'plhnljjabifklonfngdjplhhhdikcnej', state });
+
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(res.body.success, true);
+      assert.ok(res.body.data.authCode);
+      assert.strictEqual(res.body.data.expiresIn, 60);
+    });
+
+    it('6. Extension exchange works from Chrome extension origin', async () => {
+      // First authorize to obtain single-use code
+      const state = 'test-state-exchange-6';
+      const authRes = await request(app)
+        .post('/api/auth/extension/authorize')
+        .set('Authorization', `Bearer ${userAToken}`)
+        .send({ extensionId: 'plhnljjabifklonfngdjplhhhdikcnej', state });
+      const code = authRes.body.data.authCode;
+
+      // Exchange code from Chrome extension origin
+      const exchangeRes = await request(app)
+        .post('/api/auth/extension/exchange')
+        .set('Origin', 'chrome-extension://plhnljjabifklonfngdjplhhhdikcnej')
+        .send({
+          authCode: code,
+          extensionId: 'plhnljjabifklonfngdjplhhhdikcnej',
+          state
+        });
+
+      assert.strictEqual(exchangeRes.status, 200);
+      assert.strictEqual(exchangeRes.body.success, true);
+      assert.ok(exchangeRes.body.data.accessToken);
+      assert.ok(exchangeRes.body.data.refreshToken);
+      assert.strictEqual(exchangeRes.body.data.user.email, userA.email);
+    });
+
+    it('7. Extension refresh works from Chrome extension origin', async () => {
+      // First authorize and exchange to get refresh token
+      const state = 'test-state-refresh-7';
+      const authRes = await request(app)
+        .post('/api/auth/extension/authorize')
+        .set('Authorization', `Bearer ${userAToken}`)
+        .send({ extensionId: 'plhnljjabifklonfngdjplhhhdikcnej', state });
+      const code = authRes.body.data.authCode;
+
+      const exchangeRes = await request(app)
+        .post('/api/auth/extension/exchange')
+        .set('Origin', 'chrome-extension://plhnljjabifklonfngdjplhhhdikcnej')
+        .send({
+          authCode: code,
+          extensionId: 'plhnljjabifklonfngdjplhhhdikcnej',
+          state
+        });
+      const refreshToken = exchangeRes.body.data.refreshToken;
+
+      // Refresh token
+      const refreshRes = await request(app)
+        .post('/api/auth/extension/refresh')
+        .set('Origin', 'chrome-extension://plhnljjabifklonfngdjplhhhdikcnej')
+        .send({ refreshToken });
+
+      assert.strictEqual(refreshRes.status, 200);
+      assert.strictEqual(refreshRes.body.success, true);
+      assert.ok(refreshRes.body.data.accessToken);
+      assert.ok(refreshRes.body.data.refreshToken);
+    });
+
+    it('8. Extension logout works from Chrome extension origin', async () => {
+      const state = 'test-state-logout-8';
+      const authRes = await request(app)
+        .post('/api/auth/extension/authorize')
+        .set('Authorization', `Bearer ${userAToken}`)
+        .send({ extensionId: 'plhnljjabifklonfngdjplhhhdikcnej', state });
+      const code = authRes.body.data.authCode;
+
+      const exchangeRes = await request(app)
+        .post('/api/auth/extension/exchange')
+        .set('Origin', 'chrome-extension://plhnljjabifklonfngdjplhhhdikcnej')
+        .send({
+          authCode: code,
+          extensionId: 'plhnljjabifklonfngdjplhhhdikcnej',
+          state
+        });
+      const refreshToken = exchangeRes.body.data.refreshToken;
+
+      const logoutRes = await request(app)
+        .post('/api/auth/extension/logout')
+        .set('Origin', 'chrome-extension://plhnljjabifklonfngdjplhhhdikcnej')
+        .send({ refreshToken });
+
+      assert.strictEqual(logoutRes.status, 200);
+      assert.strictEqual(logoutRes.body.success, true);
+    });
+
+    it('9. Rate limiter works correctly behind Render proxy (X-Forwarded-For)', async () => {
+      const res = await request(app)
+        .get('/api/health')
+        .set('X-Forwarded-For', '198.51.100.42')
+        .set('Origin', 'https://threatlens123.netlify.app');
+
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(res.body.success, true);
+      assert.strictEqual(res.body.data.status, 'healthy');
+    });
+
+    it('10. No wildcard CORS - Access-Control-Allow-Origin is never "*"', async () => {
+      const res = await request(app)
+        .options('/api/auth/me')
+        .set('Origin', 'https://threatlens123.netlify.app')
+        .set('Access-Control-Request-Method', 'GET');
+
+      assert.notStrictEqual(res.headers['access-control-allow-origin'], '*');
+      assert.strictEqual(res.headers['access-control-allow-origin'], 'https://threatlens123.netlify.app');
+    });
+  });
 });

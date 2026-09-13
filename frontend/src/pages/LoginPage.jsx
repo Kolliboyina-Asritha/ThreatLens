@@ -31,13 +31,16 @@ export const LoginPage = () => {
       const res = await authService.authorizeExtension(extId, extState);
       const authCode = res.data?.authCode;
 
-      if (authCode && window.chrome && chrome.runtime && chrome.runtime.sendMessage) {
+      if (authCode && window.chrome && chrome.runtime && typeof chrome.runtime.sendMessage === 'function') {
         chrome.runtime.sendMessage(
           extId,
           {
             type: 'THREATLENS_AUTH_CODE',
             authCode,
-            state: extState
+            state: extState,
+            backendUrl: window.location.origin.includes('netlify.app')
+              ? 'https://threatlens-backend-3c3s.onrender.com'
+              : undefined
           },
           (response) => {
             if (chrome.runtime.lastError) {

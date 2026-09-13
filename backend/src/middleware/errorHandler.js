@@ -48,7 +48,12 @@ export const errorHandler = (err, req, res, next) => {
     return errorResponse(res, 401, 'Authentication token has expired.');
   }
 
-  // 6. Generic Internal Server Error (Sanitized)
+  // 6. CORS Policy Rejection
+  if (err.message && err.message.startsWith('CORS policy does not allow access')) {
+    return errorResponse(res, 403, err.message);
+  }
+
+  // 7. Generic Internal Server Error (Sanitized)
   const statusCode = typeof err.statusCode === 'number' ? err.statusCode : 500;
   const message = statusCode === 500 ? 'Internal server error occurred.' : (err.message || 'An unexpected error occurred.');
 

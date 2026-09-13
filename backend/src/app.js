@@ -11,27 +11,40 @@ import apiRouter from './routes/index.js';
 export const createApp = () => {
   const app = express();
 
-  // 1. Security Headers via Helmet
+  // 1. Trust proxy for reverse proxies (Render, Nginx, Cloudflare)
+  app.set('trust proxy', 1);
+
+  // 2. Security Headers via Helmet
   app.use(
     helmet({
       contentSecurityPolicy: false // Allows API to serve cleanly in dev/prod
     })
   );
 
-  // 2. CORS Configuration
-  const allowedOrigins = [
+  // 3. Centralized Strict CORS Allowlist (No Wildcards)
+  const allowedOrigins = new Set([
     env.CLIENT_URL,
     'http://localhost:5173',
     'http://127.0.0.1:5173',
-    'http://localhost:3000'
-  ].filter(Boolean);
+    'http://localhost:3000',
+    'https://threatlens123.netlify.app',
+    'https://threatlens.io',
+    'chrome-extension://plhnljjabifklonfngdjplhhhdikcnej'
+  ].filter(Boolean));
+
+  const isAllowedOrigin = (origin) => {
+    if (!origin) return true;
+    if (allowedOrigins.has(origin)) return true;
+    if (/^https:\/\/([a-z0-9-]+\.)*threatlens\.io$/i.test(origin)) return true;
+    return false;
+  };
 
   app.use(
     cors({
       origin: (origin, callback) => {
-        // Allow requests with no origin (e.g. mobile apps, curl, server-to-server)
+        // Allow requests with no origin (e.g. mobile apps, curl, extension background fetch, server-to-server)
         if (!origin) return callback(null, true);
-        if (allowedOrigins.includes(origin) || env.NODE_ENV === 'development') {
+        if (isAllowedOrigin(origin)) {
           return callback(null, true);
         }
         return callback(new Error(`CORS policy does not allow access from origin ${origin}`), false);

@@ -230,8 +230,8 @@ const initOptionsPage = () => {
   if (configForm) {
     configForm.addEventListener('submit', (e) => {
       e.preventDefault();
-      const backendUrl = backendUrlInput ? backendUrlInput.value.trim() || 'http://localhost:5000' : 'http://localhost:5000';
-      const webDashboardUrl = webDashboardUrlInput ? webDashboardUrlInput.value.trim() || 'http://localhost:5173' : 'http://localhost:5173';
+      const backendUrl = backendUrlInput ? backendUrlInput.value.trim() || 'https://threatlens-backend-3c3s.onrender.com' : 'https://threatlens-backend-3c3s.onrender.com';
+      const webDashboardUrl = webDashboardUrlInput ? webDashboardUrlInput.value.trim() || 'https://threatlens123.netlify.app' : 'https://threatlens123.netlify.app';
 
       chrome.storage.local.set({ backendUrl, webDashboardUrl }, () => {
         showStatus('Configuration saved successfully.', true);

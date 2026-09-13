@@ -252,6 +252,8 @@ chrome.runtime.onMessageExternal.addListener((message, sender, sendResponse) => 
   const isTrustedOrigin =
     origin.includes('localhost:5173') ||
     origin.includes('127.0.0.1:5173') ||
+    origin.includes('threatlens123.netlify.app') ||
+    origin.endsWith('.netlify.app') ||
     origin.endsWith('.threatlens.io') ||
     origin === 'https://threatlens.io';
 
@@ -263,15 +265,25 @@ chrome.runtime.onMessageExternal.addListener((message, sender, sendResponse) => 
 
   if (message?.type === 'THREATLENS_AUTH_CODE') {
     console.log('[ThreatLens] AUTH_CODE_EXTERNAL_RECEIVED_2026');
-    const { authCode, state } = message;
+    const { authCode, state, backendUrl: payloadBackendUrl } = message;
 
     (async () => {
       try {
         const items = await new Promise((resolve) =>
-          chrome.storage.local.get(['authStateChallenge', 'backendUrl'], resolve)
+          chrome.storage.local.get(['authStateChallenge', 'backendUrl', 'webDashboardUrl'], resolve)
         );
         const storedChallenge = items.authStateChallenge;
-        const backendUrl = items.backendUrl || 'http://localhost:5000';
+        
+        let backendUrl = items.backendUrl;
+        if (!backendUrl || backendUrl === 'http://localhost:5000') {
+          if (origin.includes('netlify.app')) {
+            backendUrl = 'https://threatlens-backend-3c3s.onrender.com';
+          } else if (payloadBackendUrl) {
+            backendUrl = payloadBackendUrl;
+          } else {
+            backendUrl = backendUrl || 'http://localhost:5000';
+          }
+        }
 
         if (!storedChallenge || storedChallenge !== state) {
           console.warn('[ThreatLens] State challenge mismatch or expired');
@@ -308,6 +320,8 @@ chrome.runtime.onMessageExternal.addListener((message, sender, sendResponse) => 
             {
               authToken: accessToken,
               refreshToken,
+              backendUrl: backendUrl,
+              webDashboardUrl: origin.includes('netlify.app') ? 'https://threatlens123.netlify.app' : (items.webDashboardUrl || 'http://localhost:5173'),
               userEmail: user.email,
               userName: user.name,
               userId: user.id,
@@ -393,7 +407,10 @@ function isInternalUrl(url) {
     url.includes('localhost:5000') ||
     url.includes('localhost:5173') ||
     url.includes('127.0.0.1:5000') ||
-    url.includes('127.0.0.1:5173')
+    url.includes('127.0.0.1:5173') ||
+    url.includes('threatlens123.netlify.app') ||
+    url.includes('threatlens-backend-3c3s.onrender.com') ||
+    url.includes('threatlens.io')
   );
 }
 
@@ -413,8 +430,8 @@ function getSettings() {
       ],
       (items) => {
         resolve({
-          backendUrl: items.backendUrl || 'http://localhost:5000',
-          webDashboardUrl: items.webDashboardUrl || 'http://localhost:5173',
+          backendUrl: items.backendUrl || 'https://threatlens-backend-3c3s.onrender.com',
+          webDashboardUrl: items.webDashboardUrl || 'https://threatlens123.netlify.app',
           authToken: items.authToken || '',
           refreshToken: items.refreshToken || '',
           userEmail: items.userEmail || '',
