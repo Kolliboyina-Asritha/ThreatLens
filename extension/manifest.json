@@ -14,13 +14,14 @@
     "http://*/*",
     "https://*/*"
   ],
-  "externally_connectable": {
-    "matches": [
-      "http://localhost:5173/*",
-      "http://127.0.0.1:5173/*",
-      "https://*.threatlens.io/*"
-    ]
-  },
+ "externally_connectable": {
+  "matches": [
+    "http://localhost:5173/*",
+    "http://127.0.0.1:5173/*",
+    "https://threatlens123.netlify.app/*",
+    "https://*.threatlens.io/*"
+  ]
+},
   "background": {
     "service_worker": "background.js"
   },
