@@ -10,9 +10,12 @@ export const setAccessToken = (token) => {
 export const getAccessToken = () => {
   return inMemoryAccessToken;
 };
+const API_URL =
+  import.meta.env.VITE_API_URL ||
+  'https://threatlens-backend-3c3s.onrender.com/api';
 
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: API_URL,
   withCredentials: true, // Crucial for HttpOnly refresh cookie transmission
   headers: {
     'Content-Type': 'application/json'
