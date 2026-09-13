@@ -77,7 +77,7 @@ api.interceptors.response.use(
 
       try {
         const refreshResponse = await axios.post(
-          '/api/auth/refresh',
+          `${API_URL}/auth/refresh`,
           {},
           { withCredentials: true }
         );
