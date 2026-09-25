@@ -104,7 +104,9 @@ export const ThreatIntelCard = ({ threatIntel }) => {
             <div>
               <span className="text-slate-400">Normalized Threat Intelligence Score:</span>
               <div className="text-slate-200 font-bold text-sm mt-0.5">
-                {threatIntel.score ?? 0} / 100
+                {threatIntel.score !== null && threatIntel.score !== undefined
+  ? threatIntel.score
+  : 'N/A'} / 100
               </div>
             </div>
             <div className="text-slate-400 text-right sm:text-right">
