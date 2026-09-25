@@ -52,7 +52,12 @@ export const scanUrl = async (req, res, next) => {
     const tiResult = tiSettled.status === 'fulfilled'
       ? tiSettled.value
       : { available: false, error: tiSettled.reason?.message || 'Threat Intelligence failure' };
-
+    console.log(
+  '\n========== THREAT INTELLIGENCE DEBUG =========='
+);
+console.log('URL sent to VirusTotal:', features.normalizedUrl);
+console.log('VT Result:', JSON.stringify(tiResult, null, 2));
+console.log('===============================================\n');
     const mlTiDuration = Date.now() - t2;
 
     timeline.push({
