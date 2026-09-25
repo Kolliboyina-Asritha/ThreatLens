@@ -4,66 +4,96 @@ import { SERVICE_CONFIG } from '../config/constants.js';
 import { ThreatIntelCache } from '../models/ThreatIntelCache.js';
 
 /**
- * Computes a deterministic SHA-256 hash of the normalized URL for caching and lookup.
- * @param {string} url - Normalized URL string
- * @returns {string} Hexadecimal SHA-256 hash
+ * Computes a deterministic SHA-256 hash of the normalized URL
+ * for MongoDB caching and lookup.
  */
 export const hashUrl = (url) => {
-  return crypto.createHash('sha256').update(url.trim().toLowerCase()).digest('hex');
+  return crypto
+    .createHash('sha256')
+    .update(url.trim().toLowerCase())
+    .digest('hex');
 };
 
 /**
- * Computes VirusTotal URL identifier (base64 of URL without padding '=' per VT v3 spec).
- * @param {string} url - Target URL
- * @returns {string} Base64 URL identifier
+ * Computes the VirusTotal v3 URL identifier.
+ *
+ * VirusTotal expects the URL encoded using URL-safe Base64
+ * with "=" padding removed.
  */
 export const getVirusTotalUrlId = (url) => {
-  return Buffer.from(url.trim()).toString('base64').replace(/=/g, '');
+  return Buffer.from(url.trim())
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
 };
 
 /**
- * Normalizes VirusTotal engine detection metrics into an explicit bounded score (0–100).
- * 
+ * Converts VirusTotal detection counts into a bounded
+ * 0-100 Threat Intelligence score.
+ *
  * Formula:
- * - If malicious >= 3: 100 (Immediate High Risk consensus)
- * - Otherwise: min(100, (malicious * 20) + (suspicious * 10))
- * 
- * @param {number} malicious
- * @param {number} suspicious
- * @returns {number} Normalized score 0-100
+ * malicious >= 3 -> 100
+ * otherwise:
+ * malicious * 20 + suspicious * 10
  */
-export const normalizeThreatIntelScore = (malicious = 0, suspicious = 0) => {
-  if (malicious >= 3) return 100;
-  const raw = malicious * 20 + suspicious * 10;
-  return Math.min(100, Math.max(0, Math.round(raw)));
+export const normalizeThreatIntelScore = (
+  malicious = 0,
+  suspicious = 0
+) => {
+  const maliciousCount = Number(malicious) || 0;
+  const suspiciousCount = Number(suspicious) || 0;
+
+  if (maliciousCount >= 3) {
+    return 100;
+  }
+
+  const raw =
+    maliciousCount * 20 +
+    suspiciousCount * 10;
+
+  return Math.min(
+    100,
+    Math.max(0, Math.round(raw))
+  );
 };
 
 /**
- * Retrieves external threat intelligence from VirusTotal with MongoDB caching and graceful degradation.
- * 
- * Security & Privacy Guarantees:
- * 1. Zero Outbound SSRF: Never visits or connects to the submitted target URL.
- * 2. Key Privacy: VirusTotal API key is stored strictly on the backend and never exposed in responses or errors.
- * 3. Cache Resilience: Fresh lookups are cached in MongoDB for 24 hours to preserve API quotas and reduce latency.
- * 
- * @param {string} normalizedUrl - Normalized target URL
- * @returns {Promise<object>} Standardized Threat Intelligence Payload
+ * Retrieves external threat intelligence from VirusTotal.
+ *
+ * Important:
+ * - 404 means VirusTotal has no URL report.
+ * - 404 does NOT mean the URL is clean.
+ * - Unknown VT reputation is represented using null values.
+ * - VirusTotal API failures gracefully disable this engine.
  */
 export const getThreatIntelligence = async (normalizedUrl) => {
-  if (!normalizedUrl || typeof normalizedUrl !== 'string') {
-    return { available: false, error: 'Invalid URL supplied for threat intelligence.' };
+  if (
+    !normalizedUrl ||
+    typeof normalizedUrl !== 'string'
+  ) {
+    return {
+      available: false,
+      source: 'VirusTotal',
+      cached: false,
+      status: 'invalid_input',
+      error: 'Invalid URL supplied for threat intelligence.'
+    };
   }
 
   const urlHash = hashUrl(normalizedUrl);
 
-  // 1. Check MongoDB Cache
+  // ============================================================
+  // 1. CHECK MONGODB CACHE
+  // ============================================================
+
   try {
     const cachedRecord = await ThreatIntelCache.findOne({
       urlHash,
       expiresAt: { $gt: new Date() }
     }).lean();
 
-    if (cachedRecord && cachedRecord.result) {
+    if (cachedRecord?.result) {
       return {
         ...cachedRecord.result,
         cached: true,
@@ -71,27 +101,53 @@ export const getThreatIntelligence = async (normalizedUrl) => {
       };
     }
   } catch (cacheErr) {
-    console.warn(`[ThreatIntel] Cache lookup error: ${cacheErr.message}. Continuing with live query.`);
+    console.warn(
+      `[ThreatIntel] Cache lookup error: ${cacheErr.message}. Continuing with live query.`
+    );
   }
 
-  // 2. Check if VirusTotal API Key is configured
-  if (!env.VIRUSTOTAL_API_KEY || env.VIRUSTOTAL_API_KEY.trim() === '') {
+  // ============================================================
+  // 2. CHECK VIRUSTOTAL API KEY
+  // ============================================================
+
+  if (
+    !env.VIRUSTOTAL_API_KEY ||
+    env.VIRUSTOTAL_API_KEY.trim() === ''
+  ) {
     return {
       available: false,
       source: 'VirusTotal',
       cached: false,
-      error: 'VirusTotal API key is not configured in backend environment.'
+      status: 'unconfigured',
+      error:
+        'VirusTotal API key is not configured in backend environment.'
     };
   }
 
-  // 3. Query VirusTotal v3 URL Endpoint safely
+  // ============================================================
+  // 3. BUILD VIRUSTOTAL URL
+  // ============================================================
+
   const vtUrlId = getVirusTotalUrlId(normalizedUrl);
-  const vtEndpoint = `${env.VIRUSTOTAL_BASE_URL.replace(/\/$/, '')}/urls/${vtUrlId}`;
+
+  const baseUrl =
+    env.VIRUSTOTAL_BASE_URL.replace(/\/$/, '');
+
+  const vtEndpoint =
+    `${baseUrl}/urls/${vtUrlId}`;
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), SERVICE_CONFIG.VIRUSTOTAL_TIMEOUT_MS);
+
+  const timeoutId = setTimeout(
+    () => controller.abort(),
+    SERVICE_CONFIG.VIRUSTOTAL_TIMEOUT_MS
+  );
 
   try {
+    // ==========================================================
+    // 4. QUERY VIRUSTOTAL
+    // ==========================================================
+
     const response = await fetch(vtEndpoint, {
       method: 'GET',
       headers: {
@@ -103,22 +159,41 @@ export const getThreatIntelligence = async (normalizedUrl) => {
 
     clearTimeout(timeoutId);
 
+    // ==========================================================
+    // 5. URL NOT FOUND IN VIRUSTOTAL
+    // ==========================================================
+
     if (response.status === 404) {
-      // URL has not been analyzed by VirusTotal yet -> Clean / Undetected baseline
-      const notFoundResult = {
+      console.log(
+        `[ThreatIntel] VirusTotal has no existing report for URL hash ${urlHash.slice(0, 12)}...`
+      );
+
+      /**
+       * IMPORTANT:
+       *
+       * This is NOT "clean".
+       *
+       * VirusTotal simply has no existing URL report.
+       */
+      const unknownResult = {
         available: true,
         source: 'VirusTotal',
         cached: false,
-        malicious: 0,
-        suspicious: 0,
-        harmless: 0,
-        undetected: 0,
-        reputation: 0,
-        score: 0,
-        status: 'unseen_by_virustotal'
+
+        status: 'unseen_by_virustotal',
+
+        malicious: null,
+        suspicious: null,
+        harmless: null,
+        undetected: null,
+
+        reputation: null,
+
+        // null = no VT score available
+        score: null
       };
 
-      // Cache the result
+      // Cache the "unknown" state.
       try {
         await ThreatIntelCache.findOneAndUpdate(
           { urlHash },
@@ -126,57 +201,148 @@ export const getThreatIntelligence = async (normalizedUrl) => {
             urlHash,
             normalizedUrl,
             provider: 'VirusTotal',
-            result: notFoundResult,
+            result: unknownResult,
             fetchedAt: new Date(),
-            expiresAt: ThreatIntelCache.calculateExpiry()
+            expiresAt:
+              ThreatIntelCache.calculateExpiry()
           },
-          { upsert: true, new: true }
+          {
+            upsert: true,
+            new: true
+          }
         );
-      } catch (err) {
-        // Non-blocking cache write failure
+      } catch (cacheErr) {
+        console.warn(
+          `[ThreatIntel] Unknown-result cache error: ${cacheErr.message}`
+        );
       }
 
-      return notFoundResult;
+      return unknownResult;
     }
 
-    if (!response.ok) {
-      const isRateLimit = response.status === 429;
-      const statusMsg = isRateLimit ? 'VirusTotal API rate limit reached' : `VirusTotal returned status ${response.status}`;
-      console.warn(`[ThreatIntel] ${statusMsg}`);
+    // ==========================================================
+    // 6. RATE LIMIT
+    // ==========================================================
+
+    if (response.status === 429) {
+      console.warn(
+        '[ThreatIntel] VirusTotal API rate limit reached.'
+      );
+
       return {
         available: false,
         source: 'VirusTotal',
         cached: false,
-        error: statusMsg
+        status: 'rate_limited',
+        error:
+          'VirusTotal API rate limit reached.'
       };
     }
 
-    const vtData = await response.json();
-    const stats = vtData?.data?.attributes?.last_analysis_stats || {};
-    const reputation = vtData?.data?.attributes?.reputation || 0;
+    // ==========================================================
+    // 7. OTHER API ERRORS
+    // ==========================================================
 
-    const malicious = Number(stats.malicious || 0);
-    const suspicious = Number(stats.suspicious || 0);
-    const harmless = Number(stats.harmless || 0);
-    const undetected = Number(stats.undetected || 0);
-    const score = normalizeThreatIntelScore(malicious, suspicious);
+    if (!response.ok) {
+      console.warn(
+        `[ThreatIntel] VirusTotal returned HTTP ${response.status}`
+      );
+
+      return {
+        available: false,
+        source: 'VirusTotal',
+        cached: false,
+        status: 'api_error',
+        error:
+          `VirusTotal returned status ${response.status}`
+      };
+    }
+
+    // ==========================================================
+    // 8. PARSE VIRUSTOTAL RESPONSE
+    // ==========================================================
+
+    const vtData = await response.json();
+
+    const attributes =
+      vtData?.data?.attributes || {};
+
+    const stats =
+      attributes.last_analysis_stats || {};
+
+    // ==========================================================
+    // 9. EXTRACT DETECTION COUNTS
+    // ==========================================================
+
+    const malicious =
+      Number(stats.malicious || 0);
+
+    const suspicious =
+      Number(stats.suspicious || 0);
+
+    const harmless =
+      Number(stats.harmless || 0);
+
+    const undetected =
+      Number(stats.undetected || 0);
+
+    const reputation =
+      Number(attributes.reputation || 0);
+
+    const totalEngines =
+      malicious +
+      suspicious +
+      harmless +
+      undetected;
+
+    // ==========================================================
+    // 10. CALCULATE VT SCORE
+    // ==========================================================
+
+    const score =
+      normalizeThreatIntelScore(
+        malicious,
+        suspicious
+      );
+
+    console.log(
+      `[ThreatIntel] VirusTotal result: malicious=${malicious}, suspicious=${suspicious}, harmless=${harmless}, undetected=${undetected}, score=${score}`
+    );
+
+    // ==========================================================
+    // 11. BUILD STANDARDIZED RESULT
+    // ==========================================================
 
     const intelResult = {
       available: true,
       source: 'VirusTotal',
       cached: false,
+
+      status: 'analyzed',
+
       malicious,
       suspicious,
       harmless,
       undetected,
+
+      totalEngines,
+
       reputation,
+
       score,
-      lastAnalysisDate: vtData?.data?.attributes?.last_analysis_date
-        ? new Date(vtData.data.attributes.last_analysis_date * 1000)
-        : new Date()
+
+      lastAnalysisDate:
+        attributes.last_analysis_date
+          ? new Date(
+              attributes.last_analysis_date * 1000
+            )
+          : null
     };
 
-    // 4. Persist to Cache
+    // ==========================================================
+    // 12. SAVE RESULT TO MONGODB CACHE
+    // ==========================================================
+
     try {
       await ThreatIntelCache.findOneAndUpdate(
         { urlHash },
@@ -186,27 +352,43 @@ export const getThreatIntelligence = async (normalizedUrl) => {
           provider: 'VirusTotal',
           result: intelResult,
           fetchedAt: new Date(),
-          expiresAt: ThreatIntelCache.calculateExpiry()
+          expiresAt:
+            ThreatIntelCache.calculateExpiry()
         },
-        { upsert: true, new: true }
+        {
+          upsert: true,
+          new: true
+        }
       );
     } catch (saveErr) {
-      console.warn(`[ThreatIntel] Cache store error: ${saveErr.message}`);
+      console.warn(
+        `[ThreatIntel] Cache store error: ${saveErr.message}`
+      );
     }
 
     return intelResult;
+
   } catch (error) {
     clearTimeout(timeoutId);
-    const isTimeout = error.name === 'AbortError';
+
+    const isTimeout =
+      error.name === 'AbortError';
+
     const message = isTimeout
       ? `VirusTotal request timed out after ${SERVICE_CONFIG.VIRUSTOTAL_TIMEOUT_MS}ms`
       : `VirusTotal API error (${error.message})`;
 
-    console.warn(`[ThreatIntel] Notice: ${message}. Degrading gracefully.`);
+    console.warn(
+      `[ThreatIntel] ${message}. Degrading gracefully.`
+    );
+
     return {
       available: false,
       source: 'VirusTotal',
       cached: false,
+      status: isTimeout
+        ? 'timeout'
+        : 'request_error',
       error: message
     };
   }
