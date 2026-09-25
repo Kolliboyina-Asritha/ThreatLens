@@ -100,7 +100,10 @@ export const evaluateUrl = async (req, res, next) => {
     const tiResult = tiSettled.status === 'fulfilled'
       ? tiSettled.value
       : { available: false, error: tiSettled.reason?.message || 'Threat Intelligence failure' };
-
+    console.log(
+  '[ThreatLens DEBUG] VT RESULT:',
+  JSON.stringify(tiResult, null, 2)
+);
     // 5. Multi-Engine Risk Fusion
     const { riskScore, riskLevel, riskBreakdown } = fuseRiskEvidence({
       indicators,
