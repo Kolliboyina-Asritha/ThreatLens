@@ -102,12 +102,19 @@ export const fuseRiskEvidence = ({
         error: ml?.error || null
       },
       threatIntelligence: {
-        score: tiScore,
-        baseWeight: RISK_FUSION_WEIGHTS.THREAT_INTELLIGENCE,
-        normalizedWeight: normWeightTi,
-        contribution: tiContrib,
-        available: isTiAvailable,
-        error: threatIntelligence?.error || null
+         score: tiScore,
+  baseWeight: RISK_FUSION_WEIGHTS.THREAT_INTELLIGENCE,
+  normalizedWeight: normWeightTi,
+  contribution: tiContrib,
+  available: isTiAvailable,
+
+  // Preserve VirusTotal state
+  status: threatIntelligence?.status || null,
+
+  // True only when VirusTotal actually has a report/score
+  hasReport: typeof threatIntelligence?.score === 'number',
+
+  error: threatIntelligence?.error || null
       },
       activeEngines
     }
