@@ -180,10 +180,19 @@ Provide your analysis in JSON format as specified.`;
 
     clearTimeout(timeoutId);
 
-    if (!response.ok) {
-      console.warn(`[LLM Service] External API responded with status ${response.status}. Using fallback explanation.`);
-      return generateFallbackExplanation(evidence);
-    }
+   if (!response.ok) {
+  const errorBody = await response.text();
+
+  console.warn(
+    `[LLM Service] External API responded with status ${response.status}.`
+  );
+
+  console.warn(
+    `[LLM Service] Error response: ${errorBody}`
+  );
+
+  return generateFallbackExplanation(evidence);
+}
 
     const data = await response.json();
     const candidateText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
