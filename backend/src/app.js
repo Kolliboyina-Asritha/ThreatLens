@@ -29,7 +29,8 @@ export const createApp = () => {
     'http://localhost:3000',
     'https://threatlens123.netlify.app',
     'https://threatlens.io',
-    'chrome-extension://plhnljjabifklonfngdjplhhhdikcnej'
+    'chrome-extension://plhnljjabifklonfngdjplhhhdikcnej',
+    'chrome-extension://mjocioaofegbejomdfalbljbaphoondm'
   ].filter(Boolean));
 
   const isAllowedOrigin = (origin) => {
